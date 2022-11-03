@@ -12,7 +12,6 @@ simd::float3 intersection(simd::float3 p1, simd::float3 p2) {
 std::vector<simd::float3> quad(simd::float3 *points) {
 
 	std::vector<simd::float3> results;
-	//printf("%p",&quad);
 	
 	int num = 0; 
 	bool draw[4] = {true,true,true,true};
@@ -145,6 +144,35 @@ std::vector<simd::float3> quad(simd::float3 *points) {
 	return results;
 }
 
+std::vector<simd::float3> line(simd::float3 a, simd::float3 b) {
+
+	std::vector<simd::float3> results;
+	
+	if(!(a.z>0&&b.z>0)) {
+		
+		if(a.z<=0&&b.z<=0) {
+			results.push_back(a);
+			results.push_back(b);
+		}
+		else if(a.z>0) {
+			simd::float3 c = intersection(b,a);
+			if(!(b.x==c.x&&b.y==c.y&&b.z==c.z)) {
+				results.push_back(b);
+				results.push_back(c);
+			}
+		}
+		else if(b.z>0) {
+			simd::float3 c = intersection(a,b);
+			if(!(a.x==c.x&&a.y==c.y&&a.z==c.z)) {
+				results.push_back(a);
+				results.push_back(c);
+			}
+		}
+	}
+	
+	return results;
+}
+
 int main(int argc, char *argv[]) {
 	@autoreleasepool {
 
@@ -167,6 +195,15 @@ int main(int argc, char *argv[]) {
 				printf(" %d",n+1);
 			}
 			printf("\n");
+		}
+		
+		simd::float3 eye = simd::float3{0,0,0};
+		
+		std::vector<simd::float3> l = line(eye,points[1]);
+		
+		if(l.size()>=2) {
+			NSLog(@"%f,%f,%f",l[0].x,l[0].y,l[0].z);
+			NSLog(@"%f,%f,%f",l[1].x,l[1].y,l[1].z);
 		}
 		
 	}
