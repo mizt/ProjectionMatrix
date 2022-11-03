@@ -12,10 +12,8 @@ namespace stb_image {
     #import "stb_image_write.h"
 }
 
-const float kRadians = float(M_PI)/180.0f;
-
 float radians(float angle) {
-    return kRadians*angle;
+    return M_PI*(angle/180.0);
 }
 
 simd::float4x4 projectionMatrix(float fovy, float aspect, float near, float far) {
@@ -53,6 +51,53 @@ simd::float4x4 projectionMatrix(float fovy, float aspect, float near, float far)
     return simd::float4x4(P,Q,R,S);
 }
 
+simd::float4x4 rotationMatrix(const float angle, const simd::float3 v) {
+    
+    simd::float4 P;
+    simd::float4 Q;
+    simd::float4 R;
+    simd::float4 S;
+    
+    if(v.x==0&&v.y==0&&v.z==0) {
+        
+        P = simd::float4{1,0,0,0};
+        Q = simd::float4{0,1,0,0};
+        R = simd::float4{0,0,1,0};
+        S = simd::float4{0,0,0,1};
+        
+    }
+    else {
+        
+        float r = radians(angle);
+        float s = sin(r);
+        float c = cos(r);
+        float oc = 1.0-c;
+        
+        P.x = oc*v.x*v.x+c;
+        P.y = oc*v.x*v.y-v.z*s;
+        P.z = oc*v.z*v.x+v.y*s;
+        P.w = 0.0f;
+        
+        Q.x = oc*v.x*v.y+v.z*s;
+        Q.y = oc*v.y*v.y+c;
+        Q.z = oc*v.y*v.z-v.x*s;
+        Q.w = 0.0f;
+        
+        R.x = oc*v.z*v.x-v.y*s;
+        R.y = oc*v.y*v.z+v.x*s;
+        R.z = oc*v.z*v.z+c;
+        R.w = 0.0f;
+        
+        S.x = 0.0f;
+        S.y = 0.0f;
+        S.z = 0.0f;
+        S.w = 1.0f;
+    }
+    
+    return simd::float4x4(P,Q,R,S);
+}
+
+
 void drawLine(NSMutableString *svg, int x1, int y1, int x2, int y2) {
     [svg appendString:[NSString stringWithFormat:@"<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\"/>",x1,y1,x2,y2]];
 }
@@ -77,21 +122,22 @@ int main(int argc, const char * argv[]) {
     
         unsigned int *texture = new unsigned int[W*H];
         
-        simd::float4x4 RM;
-        
+        printf("{\n");
+        simd::float4x4 RM = rotationMatrix(15,simd::float3{0,1,0});
         for(int i=0; i<4; i++) {
+            printf("\t");
             for(int j=0; j<4; j++) {
-                RM.columns[i][j] = 0;
+                printf("%f",RM.columns[i][j]);
+                if(!(i==3&&j==3)) printf(", ");
             }
+            printf("\n");
         }
+        printf("}\n");
         
-        RM.columns[0][0] = 1;
-        RM.columns[1][1] = 1;
-        RM.columns[2][2] = 1;
-        RM.columns[3][3] = 1;
+        const float fov = 30;
+        simd::float4x4 PM = projectionMatrix(fov,1.0,0.01,1000);
         
-        simd::float4x4 PM = projectionMatrix(60,1,0.01,1000);
-        
+        printf("{\n");
         for(int i=0; i<4; i++) {
             printf("\t");
             for(int j=0; j<4; j++) {
@@ -108,8 +154,8 @@ int main(int argc, const char * argv[]) {
         
         float points[4][2];
         
-        float px[4] = {-0.5,0.5,0.5,-0.5};
-        float py[4] = {-0.5,-0.5,0.5,0.5};
+        float px[4] = {-0.8, 0.8,0.8,-0.8};
+        float py[4] = {-0.8,-0.8,0.8, 0.8};
         
         for(int n=0; n<4; n++) {
             
