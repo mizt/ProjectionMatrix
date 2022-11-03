@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <vector>
 #import <simd/simd.h>
 
 simd::float3 intersection(simd::float3 p1, simd::float3 p2) {
@@ -8,33 +9,35 @@ simd::float3 intersection(simd::float3 p1, simd::float3 p2) {
 	return p+v*(simd::dot(simd::float3{0,0,0},n)-(simd::dot(p,n)/simd::dot(v,n)));
 }
 
-void dumpQuad(bool *draw, simd::float3 *points) {
+std::vector<simd::float3> quad(simd::float3 *points) {
+
+	std::vector<simd::float3> results;
+	//printf("%p",&quad);
 	
-	int num = 0;
+	int num = 0; 
+	bool draw[4] = {true,true,true,true};
 	for(int n=0; n<4; n++) {
-		num = draw[n]?1:0;
+		if(points[n].z>0) {
+			draw[n] = false;
+			num++;
+		}
 	}
 	
 	if(num!=0) {
-		
 		if(num==4) {
-			
 			for(int n=0; n<4; n++) {
-				printf("v %f %f %f\n",points[n].x,points[n].y,points[n].z);
+				results.push_back(points[n]);
 			}
-			
-			printf("f 1 2 3 4\n");
-			
 		}
 		else {
-			
+
 			if(num==3) {
 				
 				for(int n=0; n<4; n++) {
 					
 					if(draw[n]) { // (n-1), n, (n+1)
 						
-						printf("v %f %f %f\n",points[n].x,points[n].y,points[n].z);
+						results.push_back(points[n]);
 						
 						int L = n-1;
 						if(L<0) L+=4; 
@@ -46,15 +49,12 @@ void dumpQuad(bool *draw, simd::float3 *points) {
 							intersection(points[n],points[R])
 						};
 						
-						printf("v %f %f %f\n",p[0].x,p[0].y,p[0].z);
-						printf("v %f %f %f\n",p[1].x,p[1].y,p[1].z);
+						results.push_back(p[0]);
+						results.push_back(p[1]);
 						
 						break;
 					}
 				}
-				
-				printf("f 1 2 3\n");
-				
 			}
 			else if(num==2) {
 				
@@ -65,10 +65,10 @@ void dumpQuad(bool *draw, simd::float3 *points) {
 						intersection(points[3],points[0])
 					};
 					
-					printf("v %f %f %f\n",points[0].x,points[0].y,points[0].z);
-					printf("v %f %f %f\n",points[1].x,points[1].y,points[1].z);
-					printf("v %f %f %f\n",p[0].x,p[0].y,p[0].z);
-					printf("v %f %f %f\n",p[1].x,p[1].y,p[1].z);
+					results.push_back(points[0]);
+					results.push_back(points[1]);
+					results.push_back(p[0]);
+					results.push_back(p[1]);
 					
 				}
 				else if(draw[1]&&draw[2]) { // (p0), p1, p2, (p3)
@@ -78,10 +78,10 @@ void dumpQuad(bool *draw, simd::float3 *points) {
 						intersection(points[2],points[3])
 					};
 					
-					printf("v %f %f %f\n",p[0].x,p[0].y,p[0].z);
-					printf("v %f %f %f\n",points[1].x,points[1].y,points[1].z);
-					printf("v %f %f %f\n",points[2].x,points[2].y,points[2].z);
-					printf("v %f %f %f\n",p[1].x,p[1].y,p[1].z);
+					results.push_back(p[0]);
+					results.push_back(points[1]);
+					results.push_back(points[2]);
+					results.push_back(p[1]);
 					
 				}
 				else if(draw[2]&&draw[3]) { // (p0), (p1), p2, p3
@@ -91,10 +91,10 @@ void dumpQuad(bool *draw, simd::float3 *points) {
 						intersection(points[1],points[2])
 					};
 					
-					printf("v %f %f %f\n",p[0].x,p[0].y,p[0].z);
-					printf("v %f %f %f\n",p[1].x,p[1].y,p[1].z);
-					printf("v %f %f %f\n",points[2].x,points[2].y,points[2].z);
-					printf("v %f %f %f\n",points[3].x,points[3].y,points[3].z);
+					results.push_back(p[0]);
+					results.push_back(p[1]);
+					results.push_back(points[2]);
+					results.push_back(points[3]);
 					
 				}
 				else if(draw[3]&&draw[1]) { // p0, (p1), (p2), p3
@@ -104,22 +104,19 @@ void dumpQuad(bool *draw, simd::float3 *points) {
 						intersection(points[2],points[3])
 					};
 					
-					printf("v %f %f %f\n",points[0].x,points[0].y,points[0].z);
-					printf("v %f %f %f\n",p[0].x,p[0].y,p[0].z);
-					printf("v %f %f %f\n",p[1].x,p[1].y,p[1].z);
-					printf("v %f %f %f\n",points[3].x,points[3].y,points[3].z);
+					results.push_back(points[0]);
+					results.push_back(p[0]);
+					results.push_back(p[1]);
+					results.push_back(points[3]);
 					
 				}
-				
-				printf("f 1 2 3 4\n");
-				
 			}
 			else if(num==1) { // n-1, (n), (n), n+1 n+2
 				
 				for(int n=0; n<4; n++) {
 					
 					if(draw[n]) {
-						printf("v %f %f %f\n",points[n].x,points[n].y,points[n].z);
+						results.push_back(points[n]);
 					}
 					else {
 						
@@ -133,32 +130,24 @@ void dumpQuad(bool *draw, simd::float3 *points) {
 							intersection(points[n],points[R])
 						};
 						
-						printf("v %f %f %f\n",p[0].x,p[0].y,p[0].z);
-						printf("v %f %f %f\n",p[1].x,p[1].y,p[1].z);
+						results.push_back(p[0]);
+						results.push_back(p[1]);
+						
 					}
-					
 				}
-				
-				printf("f 1 2 3 4 5");
-				
 			}
 		}
 	}
 	else {
 		
 	}
+	
+	return results;
 }
 
 int main(int argc, char *argv[]) {
 	@autoreleasepool {
-		
-		bool draw[4] = {
-			true,
-			false,
-			true,
-			true
-		};
-		
+
 		simd::float3 points[4] = {
 			simd::float3{-2.998540,-4.325368,-0.918615},
 			simd::float3{-0.227259,0.227259,0.307068},
@@ -166,6 +155,19 @@ int main(int argc, char *argv[]) {
 			simd::float3{1.554087,-1.554087,-2.144299}
 		};
 
-		dumpQuad(draw,points);
+		std::vector<simd::float3> q = quad(points);
+		
+		if(q.size()>0) {
+			for(int n=0; n<q.size(); n++) {
+				printf("v %f %f %f\n",q[n].x,q[n].y,q[n].z);
+			}
+			
+			printf("f");
+			for(int n=0; n<q.size(); n++) {
+				printf(" %d",n+1);
+			}
+			printf("\n");
+		}
+		
 	}
 }
