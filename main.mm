@@ -122,8 +122,10 @@ int main(int argc, const char * argv[]) {
     
         unsigned int *texture = new unsigned int[W*H];
         
+        const float ANGLE = 5;
+        simd::float4x4 RM = rotationMatrix(ANGLE,simd::float3{1,1,1});
+
         printf("{\n");
-        simd::float4x4 RM = rotationMatrix(15,simd::float3{0,1,0});
         for(int i=0; i<4; i++) {
             printf("\t");
             for(int j=0; j<4; j++) {
@@ -134,8 +136,8 @@ int main(int argc, const char * argv[]) {
         }
         printf("}\n");
         
-        const float fov = 30;
-        simd::float4x4 PM = projectionMatrix(fov,1.0,0.01,1000);
+        const float FOV = 45;
+        simd::float4x4 PM = projectionMatrix(FOV,1.0,0.01,1000);
         
         printf("{\n");
         for(int i=0; i<4; i++) {
@@ -157,18 +159,32 @@ int main(int argc, const char * argv[]) {
         float px[4] = {-0.8, 0.8,0.8,-0.8};
         float py[4] = {-0.8,-0.8,0.8, 0.8};
         
+        bool draw[4] = {
+            false,
+            false,
+            false,
+            false
+        };
+        
         for(int n=0; n<4; n++) {
             
             float x = px[n];
             float y = py[n];
 
-            simd::float4 xyzw = (RM*(simd::float4{x,y,-PLANE_Z,-1.0}));
+            simd::float4 xyzw = (RM*(simd::float4{x,y,PLANE_Z,-1.0}));
             
-            xyzw.z-=OFFSET_Z;
+            xyzw.z+=OFFSET_Z;
+            
+            NSLog(@"%f,%f,%f",xyzw.x,xyzw.y,xyzw.z);
+
             xyzw = PM*xyzw;
+            
+            NSLog(@"%f,%f,%f",xyzw.x,xyzw.y,xyzw.z);
             
             points[n][0] = (W*0.5);
             points[n][1] = (H*0.5);
+            
+            if(xyzw.z<0) draw[n] = true;
             
             if(xyzw.z) {
                 points[n][0]+=(xyzw.x/xyzw.z*(W*0.5));
@@ -178,7 +194,9 @@ int main(int argc, const char * argv[]) {
         
         [svg appendString:@"<g id=\"plane\" fill=\"#AAA\">"];
 
-        drawQuad(svg,points[0][0],points[0][1],points[1][0],points[1][1],points[2][0],points[2][1],points[3][0],points[3][1]);
+        if(draw[0]&&draw[1]&&draw[2]&&draw[3]) {
+            drawQuad(svg,points[0][0],points[0][1],points[1][0],points[1][1],points[2][0],points[2][1],points[3][0],points[3][1]);
+        }
         
         [svg appendString:@"</g>"];
         
@@ -187,7 +205,7 @@ int main(int argc, const char * argv[]) {
         
         {
             simd::float4 xyzw = (RM*(simd::float4{0.0,0.0,0.0,-1.0})).xyzw;
-            xyzw.z-=OFFSET_Z;
+            xyzw.z+=OFFSET_Z;
             xyzw = PM*xyzw;
             
             if(xyzw.z) {
@@ -198,10 +216,10 @@ int main(int argc, const char * argv[]) {
         
         [svg appendString:@"<g id=\"lines\" fill=\"none\" stroke=\"#FFF\" stroke-width=\"3\" stroke-linecap=\"round\">"];
         
-        drawLine(svg,cx,cy,points[0][0],points[0][1]);
-        drawLine(svg,cx,cy,points[1][0],points[1][1]);
-        drawLine(svg,cx,cy,points[2][0],points[2][1]);
-        drawLine(svg,cx,cy,points[3][0],points[3][1]);
+        if(draw[0]) drawLine(svg,cx,cy,points[0][0],points[0][1]);
+        if(draw[1]) drawLine(svg,cx,cy,points[1][0],points[1][1]);
+        if(draw[2]) drawLine(svg,cx,cy,points[2][0],points[2][1]);
+        if(draw[3]) drawLine(svg,cx,cy,points[3][0],points[3][1]);
         
         [svg appendString:@"</g>"];
         [svg appendString:@"</svg>"];
