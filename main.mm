@@ -12,6 +12,47 @@ namespace stb_image {
     #import "stb_image_write.h"
 }
 
+const float kRadians = float(M_PI)/180.0f;
+
+float radians(float angle) {
+    return kRadians*angle;
+}
+
+simd::float4x4 projectionMatrix(float fovy, float aspect, float near, float far) {
+
+    float angle  = radians(0.5f*fovy);
+    float yScale = 1.0f/std::tan(angle);
+    float xScale = yScale/aspect;
+    float zScale = far/(far-near);
+
+    simd::float4 P;
+    simd::float4 Q;
+    simd::float4 R;
+    simd::float4 S;
+
+    P.x = xScale;
+    P.y = 0.0f;
+    P.z = 0.0f;
+    P.w = 0.0f;
+
+    Q.x = 0.0f;
+    Q.y = yScale;
+    Q.z = 0.0f;
+    Q.w = 0.0f;
+
+    R.x = 0.0f;
+    R.y = 0.0f;
+    R.z = zScale;
+    R.w = 1.0f;
+
+    S.x =  0.0f;
+    S.y =  0.0f;
+    S.z = -near * zScale;
+    S.w =  0.0f;
+
+    return simd::float4x4(P,Q,R,S);
+}
+
 void drawLine(NSMutableString *svg, int x1, int y1, int x2, int y2) {
     [svg appendString:[NSString stringWithFormat:@"<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\"/>",x1,y1,x2,y2]];
 }
@@ -49,11 +90,7 @@ int main(int argc, const char * argv[]) {
         RM.columns[2][2] = 1;
         RM.columns[3][3] = 1;
         
-        simd::float4x4 PM;
-        PM.columns[0] = simd::float4{ 1.422119, 0.000000, 0.000000, 0.000000 };
-        PM.columns[1] = simd::float4{0.000000, 2.528212, 0.000000, 0.000000 };
-        PM.columns[2] = simd::float4{-0.000878, 0.005784, -1.000000, -1.000000 };
-        PM.columns[3] = simd::float4{0.000000, 0.000000, -0.001000, 0.000000 };
+        simd::float4x4 PM = projectionMatrix(60,1,0.01,1000);
         
         for(int i=0; i<4; i++) {
             printf("\t");
