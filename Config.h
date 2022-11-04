@@ -1,3 +1,3 @@
 #define DISABLE_TRANSFOPM
-#define PLANE_Z  -3.f
-#define OFFSET_Z -0.f
+#define PLANE_Z  -0.5f
+#define OFFSET_Z -1.25f

@@ -92,6 +92,7 @@ simd::float4x4 rotationMatrix(const float angle, const simd::float3 v) {
         S.y = 0.0f;
         S.z = 0.0f;
         S.w = 1.0f;
+        
     }
     
     return simd::float4x4(P,Q,R,S);
@@ -122,8 +123,8 @@ int main(int argc, const char * argv[]) {
     
         unsigned int *texture = new unsigned int[W*H];
         
-        const float ANGLE = 5;
-        simd::float4x4 RM = rotationMatrix(ANGLE,simd::float3{1,1,1});
+        const float ANGLE = 130;
+        simd::float4x4 RM = rotationMatrix(ANGLE,simd::float3{1,1,0});
 
         printf("{\n");
         for(int i=0; i<4; i++) {
@@ -136,7 +137,7 @@ int main(int argc, const char * argv[]) {
         }
         printf("}\n");
         
-        const float FOV = 45;
+        const float FOV = 60;
         simd::float4x4 PM = projectionMatrix(FOV,1.0,0.01,1000);
         
         printf("{\n");
@@ -154,6 +155,7 @@ int main(int argc, const char * argv[]) {
         [svg appendString:@"<?xml version=\"1.0\" encoding=\"utf-8\"?>"];
         [svg appendString:setting];
         
+        simd::float4 xyzw[4];
         float points[4][2];
         
         float px[4] = {-0.8, 0.8,0.8,-0.8};
@@ -171,77 +173,106 @@ int main(int argc, const char * argv[]) {
             float x = px[n];
             float y = py[n];
 
-            simd::float4 xyzw = (RM*(simd::float4{x,y,PLANE_Z,-1.0}));
+            xyzw[n] = (RM*(simd::float4{x,y,PLANE_Z,-1.0}));
             
-            xyzw.z+=OFFSET_Z;
+            xyzw[n].z+=OFFSET_Z;
             
-            NSLog(@"%f,%f,%f",xyzw.x,xyzw.y,xyzw.z);
+            //NSLog(@"%f,%f,%f",xyzw.x,xyzw.y,xyzw.z);
 
-            xyzw = PM*xyzw;
+            xyzw[n] = PM*xyzw[n];
             
-            NSLog(@"%f,%f,%f",xyzw.x,xyzw.y,xyzw.z);
-            
-            points[n][0] = (W*0.5);
-            points[n][1] = (H*0.5);
-            
-            if(xyzw.z<0) draw[n] = true;
-            
-            if(xyzw.z) {
-                points[n][0]+=(xyzw.x/xyzw.z*(W*0.5));
-                points[n][1]-=(xyzw.y/xyzw.z*(H*0.5));
-            }
-        }
-        
-        [svg appendString:@"<g id=\"plane\" fill=\"#AAA\">"];
-
-        if(draw[0]&&draw[1]&&draw[2]&&draw[3]) {
-            drawQuad(svg,points[0][0],points[0][1],points[1][0],points[1][1],points[2][0],points[2][1],points[3][0],points[3][1]);
-        }
-        
-        [svg appendString:@"</g>"];
-        
-        int cx = (W*0.5);
-        int cy = (H*0.5);
-        
-        {
-            simd::float4 xyzw = (RM*(simd::float4{0.0,0.0,0.0,-1.0})).xyzw;
-            xyzw.z+=OFFSET_Z;
-            xyzw = PM*xyzw;
-            
-            if(xyzw.z) {
-                cx+=(xyzw.x/xyzw.z*(W*0.5));
-                cy-=(xyzw.y/xyzw.z*(H*0.5));
-            }
-        }
-        
-        [svg appendString:@"<g id=\"lines\" fill=\"none\" stroke=\"#FFF\" stroke-width=\"3\" stroke-linecap=\"round\">"];
-        
-        if(draw[0]) drawLine(svg,cx,cy,points[0][0],points[0][1]);
-        if(draw[1]) drawLine(svg,cx,cy,points[1][0],points[1][1]);
-        if(draw[2]) drawLine(svg,cx,cy,points[2][0],points[2][1]);
-        if(draw[3]) drawLine(svg,cx,cy,points[3][0],points[3][1]);
-        
-        [svg appendString:@"</g>"];
-        [svg appendString:@"</svg>"];
-        
-        std::string str = [svg UTF8String];
-        std::unique_ptr<lunasvg::Document> document = lunasvg::Document::loadFromData(str);
-        
-        lunasvg::Bitmap bitmap = document->renderToBitmap();
+            printf("simd::float3 p%d = {%f,%f,%f};\n ",n,xyzw[n].x,xyzw[n].y,xyzw[n].z);
                         
-        unsigned int *pixels = (unsigned int *)bitmap.data();
-        int rb = bitmap.stride()>>2;
+            if(xyzw[n].z<0) draw[n] = true;
+            
+          
+        }
+        
+        if(draw[0]||draw[1]||draw[2]||draw[3]) {
+            
+            for(int n=0; n<4; n++) {
+                
+                if(draw[n]) {
+                    
+                    points[n][0] = (W*0.5);
+                    points[n][1] = (H*0.5);
+                    if(xyzw[n].z) {
+                        points[n][0]+=(xyzw[n].x/xyzw[n].z*(W*0.5));
+                        points[n][1]-=(xyzw[n].y/xyzw[n].z*(H*0.5));
+                    }
+                    
+                }
+                
+            }
+            
+            [svg appendString:@"<g id=\"plane\" fill=\"rgb(255,0,0)\" opacity=\"0.5\">"];
 
-        for(int i=0; i<H; i++) {
-            for(int j=0; j<W; j++) {
-                texture[i*W+j] = pixels[i*rb+j];
+            if(draw[0]&&draw[1]&&draw[2]&&draw[3]) {
+                drawQuad(svg,points[0][0],points[0][1],points[1][0],points[1][1],points[2][0],points[2][1],points[3][0],points[3][1]);
+            }
+            
+            [svg appendString:@"</g>"];
+            
+            int cx = (W*0.5);
+            int cy = (H*0.5);
+            
+            {
+                simd::float4 xyzw = (RM*(simd::float4{0.0,0.0,0.0,-1.0})).xyzw;
+                xyzw.z+=OFFSET_Z;
+                xyzw = PM*xyzw;
+                
+                if(xyzw.z) {
+                    cx+=(xyzw.x/xyzw.z*(W*0.5));
+                    cy-=(xyzw.y/xyzw.z*(H*0.5));
+                }
+            }
+            
+            [svg appendString:@"<g id=\"lines\" fill=\"none\" stroke=\"#FFF\" opacity=\"0.5\" stroke-width=\"3\" stroke-linecap=\"round\">"];
+            
+            if(draw[0]) drawLine(svg,cx,cy,points[0][0],points[0][1]);
+            if(draw[1]) {
+                
+                
+                
+                drawLine(svg,cx,cy,points[1][0],points[1][1]);
+            }
+            if(draw[2]) drawLine(svg,cx,cy,points[2][0],points[2][1]);
+            if(draw[3]) drawLine(svg,cx,cy,points[3][0],points[3][1]);
+            
+            [svg appendString:@"</g>"];
+            [svg appendString:@"</svg>"];
+            
+            std::string str = [svg UTF8String];
+            std::unique_ptr<lunasvg::Document> document = lunasvg::Document::loadFromData(str);
+            
+            lunasvg::Bitmap bitmap = document->renderToBitmap();
+                            
+            unsigned int *pixels = (unsigned int *)bitmap.data();
+            int rb = bitmap.stride()>>2;
+
+            for(int i=0; i<H; i++) {
+                for(int j=0; j<W; j++) {
+                    texture[i*W+j] = pixels[i*rb+j];
+                }
+            }
+            
+            if(pixels) pixels = nullptr;
+            if(document) document = nullptr;
+            
+        }
+        else {
+            for(int i=0; i<H; i++) {
+                for(int j=0; j<W; j++) {
+                    texture[i*W+j] = 0xFFFF0000;
+                }
             }
         }
+        
         
         stb_image::stbi_write_jpg("../../dst.jpg",W,H,4,(void const*)texture,64);
+
         
-        if(pixels) pixels = nullptr;
-        if(document) document = nullptr;
+        
         if(texture) delete[] texture;
             
     }
