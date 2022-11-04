@@ -2,6 +2,18 @@
 #import <vector>
 #import <simd/simd.h>
 
+
+simd::float3 points[4] = {
+	simd::float3{-2.998540,-4.325368,-0.918615},
+	simd::float3{-0.227259,0.227259,0.307068},
+	simd::float3{4.325368,2.998540,-0.918615},
+	simd::float3{1.554087,-1.554087,-2.144299}
+};
+
+simd::float3 eye = simd::float3{0,0,0};
+
+
+
 simd::float3 intersection(simd::float3 p1, simd::float3 p2) {
 	simd::float3 p = p1;
 	simd::float3 v = p2-p1;
@@ -176,35 +188,34 @@ std::vector<simd::float3> line(simd::float3 a, simd::float3 b) {
 int main(int argc, char *argv[]) {
 	@autoreleasepool {
 
-		simd::float3 points[4] = {
-			simd::float3{-2.998540,-4.325368,-0.918615},
-			simd::float3{-0.227259,0.227259,0.307068},
-			simd::float3{4.325368,2.998540,-0.918615},
-			simd::float3{1.554087,-1.554087,-2.144299}
-		};
-
-		std::vector<simd::float3> q = quad(points);
+		int f=1;
 		
-		if(q.size()>0) {
-			for(int n=0; n<q.size(); n++) {
-				printf("v %f %f %f\n",q[n].x,q[n].y,q[n].z);
+		if(true) {
+			
+			std::vector<simd::float3> q = quad(points);
+			
+			if(q.size()>0) {
+				for(int n=0; n<q.size(); n++) {
+					printf("v %f %f %f\n",q[n].x,q[n].y,q[n].z);
+				}
+				
+				printf("f");
+				for(int n=0; n<q.size(); n++) {
+					printf(" %d",f++);
+				}
+				printf("\n");
 			}
 			
-			printf("f");
-			for(int n=0; n<q.size(); n++) {
-				printf(" %d",n+1);
+		}
+		
+		for(int n=0; n<4; n++) {
+			std::vector<simd::float3> l = line(eye,points[n]);
+			if(l.size()>=2) {
+				printf("v %f %f %f\n",l[0].x,l[0].y,l[0].z);
+				printf("v %f %f %f\n",l[1].x,l[1].y,l[1].z);
+				f+=2;
 			}
-			printf("\n");
+			
 		}
-		
-		simd::float3 eye = simd::float3{0,0,0};
-		
-		std::vector<simd::float3> l = line(eye,points[1]);
-		
-		if(l.size()>=2) {
-			NSLog(@"%f,%f,%f",l[0].x,l[0].y,l[0].z);
-			NSLog(@"%f,%f,%f",l[1].x,l[1].y,l[1].z);
-		}
-		
 	}
 }
